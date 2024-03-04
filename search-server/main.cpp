@@ -1,4 +1,3 @@
-
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -94,7 +93,11 @@ private:
         set<string>minus_word;
         set<string>plus_word;
     };
-
+    struct QueryWord {
+        string data;
+        bool is_minus;
+        bool is_stop;
+    };
     int document_count_ = 0;
     set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
@@ -113,22 +116,38 @@ private:
         }
         return words;
     }
+	
+    QueryWord ParseQueryWord(string text) const {
+          bool is_minus = false;
+          if (text[0] == '-') {
+              is_minus = true;
+              text = text.substr(1);
+    }
+    return {text, is_minus, IsStopWord(text)};
+}
 
-    Query ParseQuery(const string& text) const {
-
-        Query query_words;
-        for (const string& word : SplitIntoWordsNoStop(text)) {
-            if (word[0] == '-') {
-                query_words.minus_word.insert(word.substr(1));
-            }
-            else {
-                query_words.plus_word.insert(word);
-            }
-
+    Query ParseQuery(const string &text) const {
+          Query query_words;
+			for (const string &word : SplitIntoWords(text)) {
+				const QueryWord query_parse_word = ParseQueryWord(word);
+					if (!query_parse_word.is_stop) {
+					  if (query_parse_word.is_minus)
+						 query_words.minus_word.insert(query_parse_word.data);
+						else
+						   query_words.plus_word.insert(query_parse_word.data);
         }
-        return query_words;
     }
 
+		return query_words;
+}
+
+
+    double GetIDF(const string& word) const {
+		
+		   return static_cast<double> (log(document_count_ *1.0 
+		                              / word_to_document_freqs_.at(word).size()));
+	}
+	
     vector<Document> FindAllDocuments(const Query& words) const {
 
         vector<Document> matched_documents;
@@ -138,7 +157,7 @@ private:
           
             if (word_to_document_freqs_.count(word) != 0) {
 
-                const double idf = static_cast<double> ( log(document_count_ * 1.0 / word_to_document_freqs_.at(word).size()));
+                const double idf = GetIDF(word);
 
                 for (const auto& [id, tf] : word_to_document_freqs_.at(word)) {
                     document_to_relevance[id] += tf * idf;
