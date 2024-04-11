@@ -12,7 +12,7 @@
 using namespace std;
  
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-const double EPSILON = 1e-06;
+const double EPSILON = 1e-6;
  
 class SearchServer {
 public:
